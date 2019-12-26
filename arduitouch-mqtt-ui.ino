@@ -209,14 +209,8 @@ bool getTemperature() {
   return true;
 }
 
-String symbol[4][4] = {
-  { "7", "8", "9" },
-  { "4", "5", "6" },
-  { "1", "2", "3" },
-  { "C", "0", "OK" }
-};
+
 int X,Y;
-long Num1,Num2,Number;
 char action;
 boolean result = false;
 bool Touch_pressed = false;
@@ -273,27 +267,10 @@ void loop() {
     
     DetectButtons();
   
-    if (result==true) {
-      if (Number == codenum) {
-        draw_Result_Box(ILI9341_GREEN,"CODE OK",60);
-        ledcWriteTone(0,1000);
-        delay(800);
-        ledcWriteTone(0,0);
-      } else {
-        draw_Result_Box(ILI9341_RED, "WRONG CODE",30);
-        for (int i=0;i< 3;i++) {
-          ledcWriteTone(0,4000);
-          delay(100);
-          ledcWriteTone(0,0);
-          delay(50);      
-        }
-      }
-      delay(1000);
-      Number = 0; 
-      result=false;
-    }
 
-    DisplayResult(); 
+   // hier Auswertung einfügen
+
+   
   }    
   delay(100);
   ledcWriteTone(0,0);
@@ -342,137 +319,45 @@ bool Touch_Event() {
  *********************************************************************/
 void DetectButtons()
 {
-  if (X>185) //Detecting Buttons on Column 1
+  if (X>120) //Detecting Buttons on Column 1
   {
-    if (Y>265) //If cancel Button is pressed
-    {Serial.println ("Button Cancel"); Number=Num1=Num2=0; result=false;}
-    
-     if (Y>205 && Y<255) //If Button 1 is pressed
-    {Serial.println ("Button 1"); 
+    if (Y>213) //If Button 1 is pressed
+    {Serial.println ("Button 1");
     Button_ACK_Tone();
-    if (Number==0)
-    Number=1;
-    else
-    Number = (Number*10) + 1; //Pressed twice
     }
     
-     if (Y>145 && Y<195) //If Button 4 is pressed
-    {Serial.println ("Button 4"); 
-    Button_ACK_Tone();
-    if (Number==0)
-    Number=4;
-    else
-    Number = (Number*10) + 4; //Pressed twice
-    }
-    
-     if (Y>85 && Y<135) //If Button 7 is pressed
-    {Serial.println ("Button 7");
-    Button_ACK_Tone();
-    if (Number==0)
-    Number=7;
-    else
-    Number = (Number*10) + 7; //Pressed twice
-    } 
-  }
-
-  if (X<175 && X>85) //Detecting Buttons on Column 2
-  {
-    if (Y>265)
-    {Serial.println ("Button 0"); //Button 0 is Pressed
-    Button_ACK_Tone();
-    if (Number==0)
-    Number=0;
-    else
-    Number = (Number*10) + 0; //Pressed twice
-    }
-    
-    if (Y>205 && Y<255)
+     if (Y>106 && Y<213) //If Button 2 is pressed
     {Serial.println ("Button 2"); 
     Button_ACK_Tone();
-     if (Number==0)
-    Number=2;
-    else
-    Number = (Number*10) + 2; //Pressed twice
     }
     
-     if (Y>145 && Y<195)
-    {Serial.println ("Button 5"); 
-    Button_ACK_Tone();
-     if (Number==0)
-    Number=5;
-    else
-    Number = (Number*10) + 5; //Pressed twic
-    }
-    
-     if (Y>85 && Y<135)
-    {Serial.println ("Button 8"); 
-    Button_ACK_Tone();
-     if (Number==0)
-    Number=8;
-    else
-    Number = (Number*10) + 8; //Pressed twic
-    }   
-  }
-
-  if (X>0 && X<75) //Detecting Buttons on Column 3
-  {
-    if (Y>265)
-    {Serial.println ("Button OK"); 
-    result = true;
-    }
-    
-     if (Y>205 && Y<255)
+     if (Y>0 && Y<106) //If Button 3 is pressed
     {Serial.println ("Button 3"); 
     Button_ACK_Tone();
-    if (Number==0)
-    Number=3;
-    else
-    Number = (Number*10) + 3; //Pressed twice
     }
     
-     if (Y>145 && Y<195)
+  }
+
+  if (X>0 && X<120) //Detecting Buttons on Column 2
+  {
+    if (Y>213) //If Button 4 is pressed
+    {Serial.println ("Button 4");
+    Button_ACK_Tone();
+    }
+    
+     if (Y>106 && Y<213) //If Button 5 is pressed
+    {Serial.println ("Button 5"); 
+    Button_ACK_Tone();
+    }
+    
+     if (Y>0 && Y<106) //If Button 6 is pressed
     {Serial.println ("Button 6"); 
     Button_ACK_Tone();
-    if (Number==0)
-    Number=6;
-    else
-    Number = (Number*10) + 6; //Pressed twice
-    }
-    
-     if (Y>85 && Y<135)
-    {Serial.println ("Button 9");
-    Button_ACK_Tone();
-    if (Number==0)
-    Number=9;
-    else
-    Number = (Number*10) + 9; //Pressed twice
-    }   
+    }  
   }
 
 }
 
-
-/********************************************************************//**
- * @brief     shows the entered numbers (stars)
- * @param[in] None
- * @return    None
- *********************************************************************/
-void DisplayResult()
-{
-    String s1="";
-    //String s2  = String(Number);
-    tft.fillRect(0, 0, 240, 80, ILI9341_CYAN);  //clear result box
-    tft.setCursor(10, 20);
-    tft.setTextSize(4);
-    tft.setTextColor(ILI9341_BLACK);
-    if (Number == 0) {
-      tft.println(" ");
-    } else { 
-       for (int i=0;i< String(Number).length();i++)
-       s1 = s1 + "*";
-       tft.println(s1); //update new value
-    }   
-}
 
 /********************************************************************//**
  * @brief     shows the intro screen in setup procedure
@@ -483,41 +368,19 @@ void IntroScreen()
 {
   //Draw the Result Box
   tft.fillRect(0, 0, 240, 320, ILI9341_BLACK);
-  tft.drawRGBBitmap(5,80, gardenhouse,50,50);
-  tft.drawRGBBitmap(65,80, gardenhouse_active,50,50);
-  tft.drawRGBBitmap(125,80, terrace,50,50);
-  tft.drawRGBBitmap(185,80, terrace_active,50,50);
-  delay(10000); 
+
+  
   
   tft.setTextSize(0);
   tft.setTextColor(ILI9341_WHITE);
   tft.setFont(&FreeSansBold9pt7b);  
 
-  tft.setCursor(45, 190);
+  tft.setCursor(70, 120);
   tft.println("ArduiTouch MQTT UI");
- 
+  delay(1000); 
 
 }
 
-
-/********************************************************************//**
- * @brief     draws a result box after code confirmation with ok button
- * @param[in] color background color of result box
- * @param[in] test  string to display in result box area
- * @param[in] xPos  X position of text output
- * @return    None
- *********************************************************************/
-void draw_Result_Box(int color, char text[10], int xPos)
-{
-   //Draw the Result Box
-   tft.fillRect(0, 0, 240, 80, color);
-   tft.setCursor(xPos, 26);
-   tft.setTextSize(3);
-   tft.setTextColor(ILI9341_WHITE);
-
-   // draw text
-   tft.println(text);
-}
 
 /********************************************************************//**
  * @brief     draws the keypad
@@ -528,34 +391,26 @@ void draw_BoxNButtons()
 {
   
    //clear screen black
-  tft.fillRect(0, 0, 240, 320, ILI9341_BLACK);
+  tft.fillRect(0, 0, 320, 240, ILI9341_BLACK);
   tft.setFont(0);  
-  
-  //Draw the Result Box
-  tft.fillRect(0, 0, 240, 80, ILI9341_CYAN);
 
-  //Draw C and OK field   
-  tft.fillRect  (0,260,80,60,ILI9341_RED);
-  tft.fillRect  (160,260,80,60,ILI9341_GREEN); 
   
   //Draw Horizontal Lines
-  for (int h=80; h<=320; h+=60)
-  tft.drawFastHLine(0, h, 240, ILI9341_WHITE);
+  
+  tft.drawFastHLine(0, 120, 320, ILI9341_CYAN);
 
   //Draw Vertical Lines
-  for (int v=80; v<=240; v+=80)
-  tft.drawFastVLine(v, 80, 240, ILI9341_WHITE);
+  tft.drawFastVLine(106, 0, 240, ILI9341_CYAN);
+  tft.drawFastVLine(213, 0, 240, ILI9341_CYAN);
 
-  //Display keypad lables 
-  for (int j=0;j<4;j++) {
-    for (int i=0;i<3;i++) {
-      tft.setCursor(32 + (80*i), 100 + (60*j)); 
-      if ((j==3) && (i==2)) tft.setCursor(24 + (80*i), 100 + (60*j)); //OK button
-      tft.setTextSize(3);
-      tft.setTextColor(ILI9341_WHITE);
-      tft.println(symbol[j][i]);
-    }
-  }
+
+  tft.drawRGBBitmap(28,35, gardenhouse,50,50);
+  tft.drawRGBBitmap(134,35, gardenhouse_active,50,50);
+  tft.drawRGBBitmap(240,35, terrace,50,50);
+  tft.drawRGBBitmap(28,155, terrace_active,50,50);
+  tft.drawRGBBitmap(134,155, terrace_active,50,50);
+  tft.drawRGBBitmap(240,155, terrace_active,50,50);
+
 }
 
 
