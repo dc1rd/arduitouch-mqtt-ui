@@ -5,7 +5,7 @@
  *  DC1RD Rainer Dobler
  *  McBoeck
  *  
- *  Icons from: Sieren Homepoint https://github.com/sieren/Homepoint
+ *  Icons from: Sieren Homepoint https://github.com/sieren/Homepoint and https://fontawesome.com/icons?d=gallery
  *  Functions from: Hartmut Wendt  www.zihatec.de
  *  
  *
@@ -30,10 +30,8 @@
 #include "Adafruit_ILI9341.h"
 #include <XPT2046_Touchscreen.h>
 #include <Fonts/FreeSansBold9pt7b.h>
-#include <Wire.h>
-#include <SPI.h>
-#include <Adafruit_BME280.h>
-#include <Adafruit_Sensor.h>
+#include <DHTesp.h>
+#include "Ticker.h"
 #include "usergraphics.h"
 #include "gardenhouse.h"
 #include "gardenhouse_active.h"
@@ -53,7 +51,8 @@
 #define TFT_MISO 19
 #define TFT_LED  15  
 
-#define SEALEVELPRESSURE_HPA (1013.25)
+#define DHTPIN 27     // Digital pin connected to the DHT sensor
+#define DHTTYPE    DHT22     // DHT 22 (AM2302)
 
 #define BEEPER 21
 
@@ -82,9 +81,133 @@
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 XPT2046_Touchscreen touch(TOUCH_CS, TOUCH_IRQ);
-Adafruit_BME280 bme;
 
+DHTesp dht;
+void tempTask(void *pvParameters);
+bool getTemperature();
+void triggerGetTemp();
+/** Task handle for the light value read task */
+TaskHandle_t tempTaskHandle = NULL;
+/** Ticker for temperature reading */
+Ticker tempTicker;
+/** Comfort profile */
+ComfortState cf;
+/** Flag if task should run */
+bool tasksEnabled = false;
 
+bool initTemp() {
+  byte resultValue = 0;
+  // Initialize temperature sensor
+  dht.setup(DHTPIN, DHTesp::DHTTYPE);
+  Serial.println("DHT initiated");
+
+  // Start task to get temperature
+  xTaskCreatePinnedToCore(
+      tempTask,                       /* Function to implement the task */
+      "tempTask ",                    /* Name of the task */
+      4000,                           /* Stack size in words */
+      NULL,                           /* Task input parameter */
+      5,                              /* Priority of the task */
+      &tempTaskHandle,                /* Task handle. */
+      1);                             /* Core where the task should run */
+
+  if (tempTaskHandle == NULL) {
+    Serial.println("Failed to start task for temperature update");
+    return false;
+  } else {
+    // Start update of environment data every 20 seconds
+    tempTicker.attach(20, triggerGetTemp);
+  }
+  return true;
+}
+
+/**
+ * triggerGetTemp
+ * Sets flag dhtUpdated to true for handling in loop()
+ * called by Ticker getTempTimer
+ */
+void triggerGetTemp() {
+  if (tempTaskHandle != NULL) {
+     xTaskResumeFromISR(tempTaskHandle);
+  }
+}
+
+/**
+ * Task to reads temperature from DHT11 sensor
+ * @param pvParameters
+ *    pointer to task parameters
+ */
+void tempTask(void *pvParameters) {
+  Serial.println("tempTask loop started");
+  while (1) // tempTask loop
+  {
+    if (tasksEnabled) {
+      // Get temperature values
+      getTemperature();
+    }
+    // Got sleep again
+    vTaskSuspend(NULL);
+  }
+}
+
+/**
+ * getTemperature
+ * Reads temperature from DHT sensor
+ * @return bool
+ *    true if temperature could be aquired
+ *    false if aquisition failed
+*/
+bool getTemperature() {
+  // Reading temperature for humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
+  TempAndHumidity newValues = dht.getTempAndHumidity();
+  // Check if any reads failed and exit early (to try again).
+  if (dht.getStatus() != 0) {
+    Serial.println("DHT error status: " + String(dht.getStatusString()));
+    return false;
+  }
+
+  float heatIndex = dht.computeHeatIndex(newValues.temperature, newValues.humidity);
+  float dewPoint = dht.computeDewPoint(newValues.temperature, newValues.humidity);
+  float cr = dht.getComfortRatio(cf, newValues.temperature, newValues.humidity);
+
+  String comfortStatus;
+  switch(cf) {
+    case Comfort_OK:
+      comfortStatus = "Comfort_OK";
+      break;
+    case Comfort_TooHot:
+      comfortStatus = "Comfort_TooHot";
+      break;
+    case Comfort_TooCold:
+      comfortStatus = "Comfort_TooCold";
+      break;
+    case Comfort_TooDry:
+      comfortStatus = "Comfort_TooDry";
+      break;
+    case Comfort_TooHumid:
+      comfortStatus = "Comfort_TooHumid";
+      break;
+    case Comfort_HotAndHumid:
+      comfortStatus = "Comfort_HotAndHumid";
+      break;
+    case Comfort_HotAndDry:
+      comfortStatus = "Comfort_HotAndDry";
+      break;
+    case Comfort_ColdAndHumid:
+      comfortStatus = "Comfort_ColdAndHumid";
+      break;
+    case Comfort_ColdAndDry:
+      comfortStatus = "Comfort_ColdAndDry";
+      break;
+    default:
+      comfortStatus = "Unknown:";
+      break;
+  };
+
+  Serial.println(" T:" + String(newValues.temperature) + " H:" + String(newValues.humidity) + " I:" + String(heatIndex) + " D:" + String(dewPoint) + " " + comfortStatus);
+  return true;
+}
 
 String symbol[4][4] = {
   { "7", "8", "9" },
@@ -104,7 +227,11 @@ TS_Point p;
 void setup() {
   Serial.begin(115200); //Use serial monitor for debugging
 
-  unsigned status;
+  Serial.println("DHT ESP32 example with tasks");
+  initTemp();
+  // Signal end of setup() to tasks
+  tasksEnabled = true;
+
 
   pinMode(TFT_LED, OUTPUT); // define as output for backlight control
 
@@ -127,19 +254,6 @@ void setup() {
   //sound configuration
   ledcSetup(0,1E5,12);
   ledcAttachPin(BEEPER,0);
-
-//status = bme.begin();
-  //  if (!status) {
-  //      Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-  //      Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
-  //      Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-  //      Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-  //      Serial.print("        ID of 0x60 represents a BME 280.\n");
-  //      Serial.print("        ID of 0x61 represents a BME 680.\n");
-  //      while (1);
-  //  }
-    Serial.println("-- Default Test --");
-    delayTime = 1000;
 
     Serial.println();
 }
@@ -184,32 +298,22 @@ void loop() {
   delay(100);
   ledcWriteTone(0,0);
 
-  
-    printValues();
-    delay(delayTime);
+  if (!tasksEnabled) {
+    // Wait 2 seconds to let system settle down
+    delay(2000);
+    // Enable task that will read values from the DHT sensor
+    tasksEnabled = true;
+    if (tempTaskHandle != NULL) {
+      vTaskResume(tempTaskHandle);
+    }
+  }
+  yield();
 
+//END LOOP
 }
 
 
-void printValues() {
-    Serial.print("Temperature = ");
-    Serial.print(bme.readTemperature());
-    Serial.println(" *C");
 
-    Serial.print("Pressure = ");
-    Serial.print(bme.readPressure() / 100.0F);
-    Serial.println(" hPa");
-
-    Serial.print("Approx. Altitude = ");
-    Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-    Serial.println(" m");
-
-    Serial.print("Humidity = ");
-    Serial.print(bme.readHumidity());
-    Serial.println(" %");
-
-    Serial.println();
-  }  
 
 /********************************************************************//**
  * @brief     detects a touch event and converts touch data 
