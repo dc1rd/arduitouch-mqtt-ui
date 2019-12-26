@@ -18,8 +18,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */   
 
- 
-
 /*______Import Libraries_______*/
 #include <Arduino.h>
 #include <SPI.h>
@@ -32,6 +30,11 @@
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
 #include "usergraphics.h"
+#include "gardenhouse.h"
+#include "gardenhouse_active.h"
+#include "terrace.h"
+#include "terrace_active.h"
+
 /*______End of Libraries_______*/
 
 
