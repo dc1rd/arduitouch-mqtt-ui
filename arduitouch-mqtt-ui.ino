@@ -1,7 +1,12 @@
 /*
- *  Application note: Simple Keylock / Keypad for ArduiTouch and ESP32  
- *  Version 1.0
- *  Copyright (C) 2019  Hartmut Wendt  www.zihatec.de
+ *  Application note: ArduiTouch-MQTT-UI
+ *  Version 0.1
+ *  Copyright (C) 2019  
+ *  DC1RD Rainer Dobler
+ *  McBoeck
+ *  
+ *  Icons from: Sieren Homepoint https://github.com/sieren/Homepoint
+ *  Functions from: Hartmut Wendt  www.zihatec.de
  *  
  *
  *  This program is free software: you can redistribute it and/or modify
