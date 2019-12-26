@@ -374,17 +374,20 @@ void DisplayResult()
 void IntroScreen()
 {
   //Draw the Result Box
-  tft.fillRect(0, 0, 240, 320, ILI9341_WHITE);
-  tft.drawRGBBitmap(20,80, Zihatec_Logo,200,60);
+  tft.fillRect(0, 0, 240, 320, ILI9341_BLACK);
+  tft.drawRGBBitmap(5,80, gardenhouse,50,50);
+  tft.drawRGBBitmap(65,80, gardenhouse_active,50,50);
+  tft.drawRGBBitmap(125,80, terrace,50,50);
+  tft.drawRGBBitmap(185,80, terrace_active,50,50);
+  delay(10000); 
+  
   tft.setTextSize(0);
-  tft.setTextColor(ILI9341_BLACK);
+  tft.setTextColor(ILI9341_WHITE);
   tft.setFont(&FreeSansBold9pt7b);  
 
   tft.setCursor(45, 190);
-  tft.println("ArduiTouch ESP");
-  
-  tft.setCursor(43, 215);
-  tft.println("Keylock example");
+  tft.println("ArduiTouch MQTT UI");
+ 
 
 }
 
